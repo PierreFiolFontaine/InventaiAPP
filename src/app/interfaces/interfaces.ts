@@ -4,6 +4,7 @@ export class Product {
     id?: number;
     ean13?: number;
     description?: string;
+    quantity?: number;
 }
 
 export class InventoryLine {

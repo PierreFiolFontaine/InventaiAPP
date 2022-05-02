@@ -10,7 +10,9 @@ import { AppComponent } from './app.component';
 
 /* 3rd party plugins : must be provided in "providers" */
 import { BarcodeScanner } from '@awesome-cordova-plugins/barcode-scanner/ngx';
-import { SQLite, SQLiteObject } from '@awesome-cordova-plugins/sqlite/ngx';
+import { SQLite } from '@awesome-cordova-plugins/sqlite/ngx';
+
+
 
 
 

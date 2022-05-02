@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { InventoryLine, Product } from 'src/app/interfaces/interfaces';
+import { DataService } from 'src/app/services/data.service';
 
 @Component({
   selector: 'app-show-inventory',
@@ -7,9 +9,14 @@ import { Component, OnInit } from '@angular/core';
 })
 export class ShowInventoryPage implements OnInit {
 
-  constructor() { }
+  products : Product[] = []
+
+  constructor(private dbService: DataService) { }
 
   ngOnInit() {
+    this.dbService.products.subscribe((res) =>{
+      console.log(res)
+      this.products = res
+    })
   }
-
 }

@@ -5,6 +5,9 @@ import { BarcodeScanner } from '@awesome-cordova-plugins/barcode-scanner/ngx';
 import { Product } from 'src/app/interfaces/interfaces';
 import { DataService } from 'src/app/services/data.service';
 import { InventoryLine } from '../../interfaces/interfaces';
+/* import { IonRouterOutlet, Platform } from '@ionic/angular';
+import { NavController } from '@ionic/angular'; */
+import { ToastController } from '@ionic/angular';
 
 
 
@@ -20,27 +23,21 @@ import { InventoryLine } from '../../interfaces/interfaces';
 
 export class ScanProductPage {
 
-  scannableProducts: Product[] = [
-    {
-      id: 1,
-      ean13: 9780201379624,
-      description: "galletas"
-    },
-    {
-      id: 2,
-      ean13: 3146412174162,
-      description: "pasta"
-    },
-    {
-      id: 3,
-      ean13: 3135423215643,
-      description: "arroz"
-    },
-  ]
+
 
 
   /* we inject the barcodeScanner */
-  constructor(private barcodeScanner: BarcodeScanner, private dbService: DataService) { }
+  constructor(
+    private barcodeScanner: BarcodeScanner,
+    private dbService: DataService,
+    public toastController: ToastController
+    /* private platform: Platform,
+    private routerOutlet: IonRouterOutlet,
+    private navCtrl : NavController */) {
+     /*  this.platform.backButton.subscribeWithPriority(-1, () => {
+        console.log("backbutton")
+        this.navCtrl.navigateForward("/tabs/show-inventory")
+    }); */}
 
 
   activateScan() {
@@ -48,6 +45,7 @@ export class ScanProductPage {
     this.barcodeScanner.scan().then(barcodeData => {
       console.log('Barcode data', barcodeData);
       if (!barcodeData.cancelled) {
+        this.presentToast();
         //continue scanning until backbutton is pressed
         console.log("code read ok")
         //store the data
@@ -57,6 +55,7 @@ export class ScanProductPage {
         //this.dbService.getProductsBD();
 
         this.activateScan();
+        
       }
     }).catch(err => {
       console.log('Error', err);
@@ -75,7 +74,7 @@ export class ScanProductPage {
     */
 
     const ean13: number = parseInt(scannedText);
-    const product: Product = this.scannableProducts.find(product => product.ean13 == ean13) //find the product with the requested ean13 
+    const product: Product = this.dbService.scannableProducts.find(product => product.ean13 == ean13) //find the product with the requested ean13 
 
 
     //console.log(this.dbService.getLineBD(product.id))
@@ -85,14 +84,22 @@ export class ScanProductPage {
         result = res
         console.log("dins 2n then", result)
         if (result[0]) {
-          //row must be updated
+          //row must be updated TODO: update row
+          this.dbService.updateQuantityInventory(product.id)
         } else {
-          //insert new line
+          //insert new line:
           this.dbService.insertLineBD(product.id);
         }
       })
-    
+  }
 
+  async presentToast() {
+    const toast = await this.toastController.create({
+      message: 'Producto escaneado',
+      duration: 2000,
+      position: "top"
+    });
+    toast.present();
   }
 
 }
