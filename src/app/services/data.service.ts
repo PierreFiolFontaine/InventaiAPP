@@ -82,11 +82,8 @@ export class DataService {
 
   insertLineBD(productId: number) {
     console.log("Inserting line...")
-    let data = [productId];
-    /* const query : string = 'INSERT INTO stock_inventory_line (product) VALUES('+999+');'
-    console.log(query); */
-    return this.db.executeSql('INSERT INTO stock_inventory_line (product) VALUES (?)', data)
-      //return this.db.executeSql(query)
+    let data = [productId, 1];
+    return this.db.executeSql('INSERT INTO stock_inventory_line (product, quantity) VALUES (?,?)', data)
       .then(() => {
         console.log("line inserted")
       })
@@ -146,37 +143,7 @@ export class DataService {
   
   }
 
-  /* getLineBD(product: number) : Promise<InventoryLine>{
-    let data = [product]
-    return this.db.executeSql('SELECT * FROM stock_inventory_line WHERE product = ?', data).then(res => {
-      if(!res.rows.item(0)){
-        return undefined
-      }
-      return {
-        lineId: res.rows.item(0).lineId,
-        inventory: res.rows.item(0).inventory,
-        product: res.rows.item(0).product,
-        expected_quantity: res.rows.item(0).expected_quantity,
-        quantity: res.rows.item(0).quantity,
-      }
-    })
-  } */
-
-  /* getLineBD(product: number) : Promise<InventoryLine>{
-    let data = [product]
-    return this.db.executeSql('SELECT * FROM stock_inventory_line WHERE product = ?', data).then(res => {
-      if(!res.rows.item(0)){
-        return undefined
-      }
-      return {
-        lineId: res.rows.item(0).lineId,
-        inventory: res.rows.item(0).inventory,
-        product: res.rows.item(0).product,
-        expected_quantity: res.rows.item(0).expected_quantity,
-        quantity: res.rows.item(0).quantity,
-      }
-    })
-  } */
+  
 }
 
 
