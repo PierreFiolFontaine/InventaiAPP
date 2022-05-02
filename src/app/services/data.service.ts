@@ -103,7 +103,7 @@ export class DataService {
         for (var i = 0; i < res.rows.length; i++) {
           //find product we are recieving on inventloryline
           let productLine: Product = this.scannableProducts.find(product => product.id == res.rows.item(i).product)
-          selectItems.push({
+          selectItems.unshift({
             ean13: productLine.ean13,
             description: productLine.description,
             quantity: res.rows.item(i).quantity,

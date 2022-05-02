@@ -16,6 +16,9 @@ import { ShowInventoryPage } from './show-inventory.page';
     IonicModule,
     ShowInventoryPageRoutingModule
   ],
+  exports:[
+    ShowInventoryPage
+  ],
   declarations: [ShowInventoryPage]
 })
 export class ShowInventoryPageModule {}

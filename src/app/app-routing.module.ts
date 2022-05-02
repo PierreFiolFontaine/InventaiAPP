@@ -13,6 +13,10 @@ const routes: Routes = [
   {
     path: 'show-inventory',
     loadChildren: () => import('./pages/show-inventory/show-inventory.module').then( m => m.ShowInventoryPageModule)
+  },
+  {
+    path: 'scan-product-halfscreen',
+    loadChildren: () => import('./pages/scan-product-halfscreen/scan-product-halfscreen.module').then( m => m.ScanProductHalfscreenPageModule)
   }
 ];
 @NgModule({
