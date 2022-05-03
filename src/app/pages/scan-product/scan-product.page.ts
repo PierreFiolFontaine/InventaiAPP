@@ -85,10 +85,13 @@ export class ScanProductPage {
         console.log("dins 2n then", result)
         if (result[0]) {
           //row must be updated TODO: update row
-          this.dbService.updateQuantityInventory(product.id)
+          console.log("Abans de cridar a update quantity")
+          console.log("product", product.id)
+          console.log("quantity", product.quantity)
+          this.dbService.updateQuantityInventory(product.id, product.quantity)
         } else {
           //insert new line:
-          this.dbService.insertLineBD(product.id);
+          this.dbService.insertLineBD(product.id, 1);
         }
       })
   }

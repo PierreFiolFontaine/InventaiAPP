@@ -59,7 +59,7 @@ export class DataService {
 
   constructor(private sqlite: SQLite) {
     this.createDB();
-   }
+  }
 
 
   createDB(): void {
@@ -80,12 +80,13 @@ export class DataService {
       .catch(e => console.log(e))
 
   }
-  
 
 
-  insertLineBD(productId: number) {
+
+  insertLineBD(productId: number, quantity:number) {
     console.log("Inserting line...")
-    let data = [productId, 1];
+    console.log("quantity", quantity)
+    let data = [productId, quantity];
     return this.db.executeSql('INSERT INTO stock_inventory_line (product, quantity) VALUES (?,?)', data)
       .then(() => {
         console.log("line inserted")
@@ -116,21 +117,20 @@ export class DataService {
         }
       }
     })
-    .catch(e => console.log(e));
-    console.log("totes linies dins promesa", selectItems)
+      .catch(e => console.log(e));
     this.products.next(selectItems)
-/*     return new Promise<InventoryLine[]>((resolve, reject) => {
-      resolve(selectItems)
-    }); */
+    /*     return new Promise<InventoryLine[]>((resolve, reject) => {
+          resolve(selectItems)
+        }); */
   }
 
-  getLineBD(product:number) {
+  getLineBD(product: number) {
 
-    
+
     let data = [product]
     let inventoryLines: InventoryLine[] = [];
-    return this.db.executeSql('SELECT * FROM stock_inventory_line WHERE product = ?',data).then( res => {
-      
+    return this.db.executeSql('SELECT * FROM stock_inventory_line WHERE product = ?', data).then(res => {
+
       if (res.rows.length > 0) {
         for (var i = 0; i < res.rows.length; i++) {
           inventoryLines.push({
@@ -142,30 +142,42 @@ export class DataService {
           });
         }
       }
-      // console.log('1', inventoryLines) // mostra array 
+
       return new Promise<InventoryLine[]>((resolve, reject) => {
         resolve(inventoryLines)
-      });    
+      });
     })
-    .catch(e => console.log(e));
-    //console.log(inventoryLines)
-  
+      .catch(e => console.log(e));
+
+
   }
 
   /* method to get a subcribable from Products of inventoryLines */
-  fetchProducts() : Observable <Product[]>{
+  fetchProducts(): Observable<Product[]> {
     return this.products.asObservable();
   }
 
   /* method to update quantity when inventoryline exists */
-  updateQuantityInventory(product: number){
+  /* updateQuantityInventory(product: number){
     let data = [product]
     this.db.executeSql('UPDATE stock_inventory_line SET quantity = quantity + 1 WHERE product = ?', [data]).then(res =>{
       console.log("update done")
       this.getProductsFromLines()
+  
+      
     })
     .catch(e => console.log(e));
+  } */
+
+  updateQuantityInventory(product: number, quantity:number) {
+    let data = [product]
+    this.db.executeSql('DELETE FROM stock_inventory_line WHERE product = ?', [data]).then(res => {
+      console.log("delete done");
+      this.insertLineBD(product, quantity);
+    })
+      .catch(e => console.log(e));
   }
+
   
 }
 
