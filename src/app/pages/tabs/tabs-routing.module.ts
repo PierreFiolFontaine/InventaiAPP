@@ -11,10 +11,6 @@ const routes: Routes = [
     component: TabsPage,
     children: [
       {
-        path: 'scan-product',
-        loadChildren: () => import('../scan-product/scan-product.module').then(m => m.ScanProductPageModule)
-      },
-      {
         path: 'show-inventory',
         loadChildren: () => import('../show-inventory/show-inventory.module').then(m => m.ShowInventoryPageModule )
       },
@@ -24,14 +20,14 @@ const routes: Routes = [
       },
       {
         path: '',
-        redirectTo: '/tabs/scan-product',
+        redirectTo: '/tabs/show-inventory',
         pathMatch: 'full'
       }
     ]
   },
   {
     path: '',
-    redirectTo: '/tabs/scan-product',
+    redirectTo: '/tabs/show-inventory',
     pathMatch: 'full'
   }
 ];

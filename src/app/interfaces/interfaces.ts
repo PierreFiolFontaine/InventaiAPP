@@ -2,7 +2,7 @@ import { NumberSymbol } from "@angular/common";
 
 export class Product {
     id?: number;
-    ean13?: number;
+    ean13?: string;
     description?: string;
     quantity?: number;
 }

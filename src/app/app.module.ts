@@ -20,7 +20,7 @@ import { NativeAudio } from '@awesome-cordova-plugins/native-audio/ngx';
   declarations: [AppComponent],
   entryComponents: [],
   imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule,],
-  providers: [{ provide: RouteReuseStrategy, useClass: IonicRouteStrategy }, BarcodeScanner, SQLite, NativeAudio],
+  providers: [{ provide: RouteReuseStrategy, useClass: IonicRouteStrategy }, BarcodeScanner, SQLite, NativeAudio  ],
   bootstrap: [AppComponent],
 })
 export class AppModule {}

@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import Quagga from 'quagga'; // ES6
+import Quagga from 'quagga';
 import { InventoryLine, Product } from 'src/app/interfaces/interfaces';
 import { DataService } from 'src/app/services/data.service';
 import { ToastController } from '@ionic/angular';
@@ -23,6 +23,8 @@ export class ScanProductHalfscreenPage implements OnInit {
   isQUantityManual: boolean = false; // listens to checkbox in html via ngModel binding
   manualQuantity: number;
 
+
+
   constructor(
     private dbService: DataService,
     public toastController: ToastController,
@@ -30,6 +32,11 @@ export class ScanProductHalfscreenPage implements OnInit {
     private nativeAudio: NativeAudio) { }
 
   ngOnInit() {
+
+    //subscribe to list changes
+    this.dbService.productsFromInventoryLines.subscribe((res) => {
+      this.products = res
+    })
 
     //inicialize scan
     Quagga.init({
@@ -63,31 +70,26 @@ export class ScanProductHalfscreenPage implements OnInit {
         }
       });
 
-    //subscribe to list changes
-    this.dbService.products.subscribe((res) => {
-      this.products = res
-    })
 
-    this.nativeAudio.preloadSimple('id1', 'https://www.soundjay.com/buttons/beep-08b.mp3')
-    this.nativeAudio.preloadSimple('id2', 'https://www.soundjay.com/buttons/beep-03.mp3')
   }
 
 
   onBarcodeScanned(scannedText: string) {
-
+    console.log("obs dins metode onScanned()", this.dbService.scannableProductsObs)
+    console.log(this.dbService.scannableProducts)
 
 
     //only accept items from scannableProducts
 
-    const ean13: number = parseInt(scannedText);
-    if (!this.dbService.scannableProducts.find(scannableProduct => scannableProduct.ean13 == ean13)) {
-      this.nativeAudio.play("id2")
+    if (!this.dbService.scannableProducts.find(scannableProduct => scannableProduct.ean13 == scannedText)) {
+      //this.nativeAudio.play("id2")
       this.presentToast("Producto no encontrado", "danger")
       console.log("producto no encontrado")
       return;
     }
     //find the product with the requested ean13 
-    const product: Product = this.dbService.scannableProducts.find(scannableProduct => scannableProduct.ean13 == ean13)
+    console.log("mostra scanabbles abans de fer un insert a onBarcodeScanned()", this.dbService.scannableProducts)
+    const product: Product = this.dbService.scannableProducts.find(scannableProduct => scannableProduct.ean13 == scannedText)
 
     let result: InventoryLine[] | void;
 
@@ -98,16 +100,18 @@ export class ScanProductHalfscreenPage implements OnInit {
         .then((res) => {
           result = res
           if (result[0]) {
-            //row must be updated TODO: update row
+            //row must be updated
             //search for quantity:
+            console.log("updaterow",this.products)
             const quantity: number = this.products.find(storedProduct => storedProduct.ean13 == product.ean13).quantity
             this.dbService.updateQuantityInventory(product.id, quantity + 1)
           } else {
-            //insert new line:
+            //insert new line
+            console.log("new inventory line")
             this.dbService.insertLineBD(product.id, 1);
           }
 
-          this.nativeAudio.play("id1");
+          //this.nativeAudio.play("id1");
           this.presentToast("Añadida 1 unidad de " + product.description, "success")
         })
     } else {
@@ -126,7 +130,7 @@ export class ScanProductHalfscreenPage implements OnInit {
               this.dbService.insertLineBD(product.id, this.manualQuantity);
             }
           })
-        this.nativeAudio.play("id1")
+        //this.nativeAudio.play("id1")
         this.presentToast("Añadida " + this.manualQuantity + " unidad de " + product.description, "success")
       })
 
@@ -176,10 +180,5 @@ export class ScanProductHalfscreenPage implements OnInit {
       });
       await alert.present();
     })
-  }
-
-
-  updateInventoryOnAlert() {
-
   }
 }
