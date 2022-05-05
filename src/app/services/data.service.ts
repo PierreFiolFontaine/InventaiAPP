@@ -18,24 +18,18 @@ import { Product, InventoryLine } from '../interfaces/interfaces';
 })
 export class DataService implements OnInit {
 
-  ngOnInit(): void {
+  obsMostrableProducts: BehaviorSubject<Product[]> = new BehaviorSubject([])
+  scannableProducts: Product[] = [] //Array with all the products that can be scanned
 
+
+  ngOnInit(): void {
 
   }
 
-  productsFromInventoryLines = new BehaviorSubject<Product[]>([]); // observable with all the product comming from inserted inventory lines
-  productsSearchResult = new BehaviorSubject<Product[]>([]) //observable with search result of products (for searchbar)
-  scannableProductsObs = new BehaviorSubject<Product[]>([]) //observable with all the products scannable (from product table)
-  scannableProducts: Product[] = []
-
-
   /* variable to store the Database */
   db: SQLiteObject;
-  /* this statement will be always the same:
-  note that WITHOUT ROWID is mandatory in sqlite to avoit creating default rowid column.
-  we want to have a productId column and primary key. Note also that no need to use AUTO_INCREMENT */
 
-  /* add foreign keys!!!!!!!!!!! */
+  /* variables with create model commands */
   private createStockInventoryLineTable: string = "create table if not exists stock_inventory_line(" +
     "lineId INTEGER PRIMARY KEY," +
     "inventory INTEGER," +
@@ -57,34 +51,13 @@ export class DataService implements OnInit {
     "('3135423215643','arroz')" +
     "EXCEPT SELECT ean13, description FROM product;"
 
-  /* products available to be scanned 
-  now filled with dummy data, but it will get the actual products when connecting*/
-  /* scannableProducts: Product[] = [
-    {
-      id: 1,
-      ean13: "9780201379624",
-      description: "galletas"
-    },
-    {
-      id: 2,
-      ean13: "3146412174162",
-      description: "pasta"
-    },
-    {
-      id: 3,
-      ean13: "3135423215643",
-      description: "arroz"
-    }, 
 
-  ]*/
 
   constructor(private sqlite: SQLite) {
+    /* start subscribing to dbService.scannableProducts */
+
+
     this.createDB();
-    //subscribe to observalbe
-    this.scannableProductsObs.subscribe((res) => {
-      console.log("entrant a subscriber", res)
-      this.scannableProducts = res
-    })
   }
 
 
@@ -107,84 +80,41 @@ export class DataService implements OnInit {
                 this.db.executeSql(this.populateProductTable, [])
                   .then(() => {
                     console.log(console.log('Executed SQL', this.populateProductTable))
-                    this.getScannableProductsFromProduct()
                   })
                   .catch(e => console.log(e));
               })
               .catch(e => console.log(e));
           })
           .catch(e => console.log(e));
-        
-        this.getProductsFromLines() //update obs //////////////////////////////////////////////////////////////////////////////
-
-
+        /* start subscribing to scannableProducts */
+        this.getScannableProducts() // subscribe to list of scanableproducts once the table is created
+          .subscribe((res) => {
+            if (res.rows.length > 0) {
+              for (var i = 0; i < res.rows.length; i++) {
+                this.scannableProducts.push({
+                  id: res.rows.item(i).productId,
+                  ean13: res.rows.item(i).ean13,
+                  description: res.rows.item(i).description,
+                })
+              }
+            }
+          })
+        /* end subscribing to scannableProducts */
+        this.getMostrableProducts() //update mostrableProduct Observable once table is created and once we are subscribed to scannalbe products
       })
       .catch(e => console.log(e))
 
   }
 
 
-
-  insertLineBD(productId: number, quantity: number) {
-    console.log("Inserting line...")
-    console.log("quantity", quantity)
-    let data = [productId, quantity];
-    return this.db.executeSql('INSERT INTO stock_inventory_line (product, quantity) VALUES (?,?)', data)
-      .then(() => {
-        console.log("line inserted")
-        this.getProductsFromLines() //actualitzar obs
-      })
-      .catch(e => console.log(e));
-  }
-
-  getScannableProductsFromProduct() {
-
-    let selectItems: Product[] = []
-    this.db.executeSql('SELECT * FROM product', []).then(res => {
-      if (res.rows.length > 0) {
-        for (var i = 0; i < res.rows.length; i++) {
-          selectItems.push({
-            id: res.rows.item(i).productId,
-            ean13: res.rows.item(i).ean13,
-            description: res.rows.item(i).description,
-          })
-        }
-      }
-    })
-      .catch(e => console.log(e));
-    console.log("Array que es passa a obs de scanableProducts", selectItems)
-    this.scannableProductsObs.next(selectItems)
-    console.log("obs dins metode get", this.scannableProductsObs)
-  }
-
-  getProductsFromLines() {
-    let selectItems: Product[] = [];
-    this.db.executeSql('SELECT * FROM stock_inventory_line', []).then(res => {
-      if (res.rows.length > 0) {
-        for (var i = 0; i < res.rows.length; i++) {
-          //find product we are recieving on inventloryline
-          let productLine: Product = this.scannableProducts.find(product => product.id == res.rows.item(i).product)
-          selectItems.unshift({
-            ean13: productLine.ean13,
-            description: productLine.description,
-            quantity: res.rows.item(i).quantity,
-          });
-        }
-      }
-    })
-      .catch(e => console.log(e));
-    console.log("getProductFromLines",selectItems)
-    this.productsFromInventoryLines.next(selectItems)
-
+  getScannableProducts(): Observable<any> {
+    return from(this.db.executeSql('SELECT * FROM product', []));
   }
 
   getLineBD(product: number) {
-
-
     let data = [product]
     let inventoryLines: InventoryLine[] = [];
     return this.db.executeSql('SELECT * FROM stock_inventory_line WHERE product = ?', data).then(res => {
-
       if (res.rows.length > 0) {
         for (var i = 0; i < res.rows.length; i++) {
           inventoryLines.push({
@@ -196,14 +126,23 @@ export class DataService implements OnInit {
           });
         }
       }
-
       return new Promise<InventoryLine[]>((resolve, reject) => {
         resolve(inventoryLines)
       });
     })
       .catch(e => console.log(e));
+  }
 
-
+  insertLineBD(productId: number, quantity: number) {
+    console.log("Inserting line...")
+    console.log("quantity", quantity)
+    let data = [productId, quantity];
+    return this.db.executeSql('INSERT INTO stock_inventory_line (product, quantity) VALUES (?,?)', data)
+      .then(() => {
+        console.log("line inserted")
+        this.getMostrableProducts() //update mostrableProduct Observable
+      })
+      .catch(e => console.log(e));
   }
 
   updateQuantityInventory(product: number, quantity: number) {
@@ -215,7 +154,27 @@ export class DataService implements OnInit {
       .catch(e => console.log(e));
   }
 
-  /* method to perform search in inventory lines and return products */
+  getMostrableProducts() {
+    return this.db.executeSql('SELECT * FROM stock_inventory_line', []).then((res) => {
+      let internalMostrableProducts: Product[] = []
+      if (res.rows.length > 0) {
+        for (var i = 0; i < res.rows.length; i++) {
+          //find the scannable product
+          console.log(internalMostrableProducts)
+          const scannedProduct: Product = this.scannableProducts.find(scannableProduct => scannableProduct.id == res.rows.item(i).product)
+          console.log(scannedProduct);
+          internalMostrableProducts.unshift({
+            description: scannedProduct.description,
+            ean13: scannedProduct.ean13,
+            expected_quantity: res.rows.item(i).expected_quantity,
+            quantity: res.rows.item(i).quantity,
+          })
+        }
+        console.log(internalMostrableProducts)
+        this.obsMostrableProducts.next(internalMostrableProducts)
+      }
+    })
+  }
 
   searchProductsDB(value: string): Observable<any> {
     const searchValue: string = "%" + value + "%";
@@ -224,6 +183,31 @@ export class DataService implements OnInit {
     return from(this.db.executeSql("SELECT * FROM product WHERE ean13 LIKE ? OR description LIKE ?", data))
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -4,7 +4,9 @@ import { InventoryLine, Product } from 'src/app/interfaces/interfaces';
 import { DataService } from 'src/app/services/data.service';
 import { ToastController } from '@ionic/angular';
 import { AlertController } from '@ionic/angular';
-import { NativeAudio } from '@awesome-cordova-plugins/native-audio/ngx';
+
+
+
 
 
 
@@ -18,27 +20,30 @@ import { NativeAudio } from '@awesome-cordova-plugins/native-audio/ngx';
 export class ScanProductHalfscreenPage implements OnInit {
 
 
-  products: Product[] = [] // to store the product list we will subscribe and show
-
   isQUantityManual: boolean = false; // listens to checkbox in html via ngModel binding
   manualQuantity: number;
-
+  mostrableProducts: Product[] = [] //Array with all the products that will be displayed
 
 
   constructor(
     private dbService: DataService,
     public toastController: ToastController,
     private alertCtrl: AlertController,
-    private nativeAudio: NativeAudio) { }
+  ) { }
 
   ngOnInit() {
 
-    //subscribe to list changes
-    this.dbService.productsFromInventoryLines.subscribe((res) => {
-      this.products = res
-    })
 
-    //inicialize scan
+    /* start subscribing to mostrableProducts */
+    this.dbService.obsMostrableProducts.subscribe((res) => {
+      this.mostrableProducts = res;
+    })
+    /* end subscribing to mostrableProducts */
+
+
+
+
+    /* start inicializing scan */
     Quagga.init({
       inputStream: {
         constraints: {
@@ -64,77 +69,64 @@ export class ScanProductHalfscreenPage implements OnInit {
         } else {
           Quagga.start();
           Quagga.onDetected((res) => {
-            //window.alert(`code: ${res.codeResult.code}`);
             this.onBarcodeScanned(res.codeResult.code)
           })
         }
       });
-
+    /* end inicializing scan */
 
   }
 
-
   onBarcodeScanned(scannedText: string) {
-    console.log("obs dins metode onScanned()", this.dbService.scannableProductsObs)
-    console.log(this.dbService.scannableProducts)
-
 
     //only accept items from scannableProducts
-
     if (!this.dbService.scannableProducts.find(scannableProduct => scannableProduct.ean13 == scannedText)) {
-      //this.nativeAudio.play("id2")
       this.presentToast("Producto no encontrado", "danger")
-      console.log("producto no encontrado")
       return;
-    }
-    //find the product with the requested ean13 
-    console.log("mostra scanabbles abans de fer un insert a onBarcodeScanned()", this.dbService.scannableProducts)
-    const product: Product = this.dbService.scannableProducts.find(scannableProduct => scannableProduct.ean13 == scannedText)
-
-    let result: InventoryLine[] | void;
-
-    if (!this.isQUantityManual) {
-      console.log("check desactivat")
-      //show toast and automatic quantity
-      this.dbService.getLineBD(product.id)
-        .then((res) => {
-          result = res
-          if (result[0]) {
-            //row must be updated
-            //search for quantity:
-            console.log("updaterow",this.products)
-            const quantity: number = this.products.find(storedProduct => storedProduct.ean13 == product.ean13).quantity
-            this.dbService.updateQuantityInventory(product.id, quantity + 1)
-          } else {
-            //insert new line
-            console.log("new inventory line")
-            this.dbService.insertLineBD(product.id, 1);
-          }
-
-          //this.nativeAudio.play("id1");
-          this.presentToast("Añadida 1 unidad de " + product.description, "success")
-        })
     } else {
-      console.log("check activat")
-      //do not show modal but alert, and fill manual quantity
-      this.presentAlertPrompt(product.ean13.toString(), product.description).then((response) => {
-        console.log("despres de alert", this.manualQuantity)
-        this.dbService.getLineBD(product.id)
-          .then((res) => {
-            result = res
+      //find what product we are scanning
+      const scannedProduct: Product = this.dbService.scannableProducts.find(scannableProduct => scannableProduct.ean13 == scannedText)
+
+      if (!this.isQUantityManual) {
+        console.log("check desactivat")
+        //show toast and automatic quantity
+        this.dbService.getLineBD(scannedProduct.id)
+          .then((result) => {
             if (result[0]) {
+              console.log(result[0])
+              //row must be updated
+              //search for quantity:
+              const quantity: number = result[0].quantity
+              console.log("updated quantity")
+              this.dbService.updateQuantityInventory(scannedProduct.id, quantity + 1);
 
-              this.dbService.updateQuantityInventory(product.id, this.manualQuantity)
             } else {
-              //insert new line:
-              this.dbService.insertLineBD(product.id, this.manualQuantity);
+              //insert new line
+              console.log("new inventory line")
+              this.dbService.insertLineBD(scannedProduct.id, 1);
             }
+            this.presentToast("Añadida 1 unidad de " + scannedProduct.description, "success")
           })
-        //this.nativeAudio.play("id1")
-        this.presentToast("Añadida " + this.manualQuantity + " unidad de " + product.description, "success")
-      })
-
+      } else {
+        console.log("check activat")
+        //do not show modal but alert, and fill manual quantity
+        this.presentAlertPrompt(scannedProduct.ean13.toString(), scannedProduct.description).then((response) => {
+          console.log("despres de alert", this.manualQuantity)
+          this.dbService.getLineBD(scannedProduct.id)
+            .then((result) => {
+              if (result[0]) {
+                this.dbService.updateQuantityInventory(scannedProduct.id, this.manualQuantity)
+              } else {
+                //insert new line:
+                this.dbService.insertLineBD(scannedProduct.id, this.manualQuantity);
+              }
+            })
+          this.presentToast("Registrado: " + this.manualQuantity + " unidad de " + scannedProduct.description, "success")
+        })
+      }
     }
+
+
   }
 
   async presentToast(message: string, color: string) {
@@ -181,4 +173,32 @@ export class ScanProductHalfscreenPage implements OnInit {
       await alert.present();
     })
   }
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

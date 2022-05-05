@@ -1,4 +1,4 @@
-<ion-searchbar placeholder="Buscar película" animated debounce="700"[value]="searchText" (ionChange)="searchProduct($event)"></ion-searchbar>
+<ion-searchbar placeholder="Buscar producto" animated debounce="550"[value]="searchText" (ionChange)="searchProduct($event)"></ion-searchbar>
 
   <ion-list>
     <ion-list-header>
@@ -70,7 +70,7 @@
         </ion-grid>
       </ion-item>
 
-    <ion-item *ngFor="let product of products">
+    <ion-item *ngFor="let product of mostrableProducts">
       <ion-grid>
         <ion-row>
           <ion-col size="6">
